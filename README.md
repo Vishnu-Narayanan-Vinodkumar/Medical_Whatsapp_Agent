@@ -1,324 +1,269 @@
-# DiagnoBot - WhatsApp Bot Implementation
+# DiagnoBot - Diagnostics Support Prototype
 
-A HIPAA-compliant WhatsApp bot for diagnostics chain call center automation during peak seasons (flu, COVID, etc.). Handles OTP-based authentication, report status queries, centre information, pricing inquiries, and intelligent escalation.
+A browser-based prototype with a patient chat, a beta conversational assistant, sample appointment booking, and an operator dashboard. It demonstrates a diagnostics support workflow, not a production healthcare service.
 
-## Project Structure
+**This implementation does not use Twilio or WhatsApp.** The folder name and older design documents reflect the original concept; users interact with this version through the web app.
 
-```
-diagnobot-whatsapp/
-├── bot-core.js                    # Main Node.js/Express server
-├── bot-metrics-dashboard.html     # Real-time metrics dashboard (no dependencies)
-├── package.json                   # NPM dependencies
-├── .env.example                   # Environment variables template
-├── README.md                       # This file
-├── docs/
-│   ├── SDD_Stage1_PRD.md         # Product Requirements Document
-│   ├── SDD_Stage2_Spec.md        # Technical Specifications
-│   ├── SDD_Stage3_Story.md       # User Stories
-│   ├── SDD_Stage4_AcceptCriteria.md  # Acceptance Criteria
-│   ├── SDD_Stage5_Prompt.md      # System Prompt for Intent Recognition
-│   └── SDD_Stage6_Code.md        # Code Architecture & Implementation
-├── src/
-│   ├── handlers/                  # Message handlers (report, centre, pricing)
-│   ├── auth/                      # OTP & session management
-│   ├── db/                        # Database schemas & migrations
-│   └── utils/                     # Helper functions (logging, encryption)
-├── tests/                         # Jest test suites
-├── logs/                          # Application logs (gitignored)
-└── node_modules/                  # Dependencies (created by npm install)
-```
+> Use fictional details only. Reports, clinic listings, prices, slots and default payments are samples. No real clinic appointment is created, no money moves in demo payment mode, and no regulatory compliance certification is claimed.
+
+## What Works In The Prototype
+
+| Feature | What actually happens |
+| --- | --- |
+| Guided chat | Topic buttons use app handlers; other messages can use Groq to classify the request. |
+| Assistant (Beta) | Groq generates conversational replies using short session history and public catalogue context. |
+| Approved websites | The server retrieves configured public HTML pages and supplies excerpts with source links. This is not unrestricted web search. |
+| Location | Browser permission enables approximate distance sorting of listed centres. Users can also select a city manually. |
+| Reports and catalogue | Fictional report statuses and sample centre/test details are displayed. No real lab system is connected by default. |
+| Appointments | Reservations, location/time changes and statuses are saved in the local database. Clinic inventory is simulated. |
+| Payments | Default payment is an explicit simulation. Hosted Stripe Checkout is an optional integration requiring separate credentials. |
+| Operator desk | Metrics reflect actual activity in this app. Operators can claim support requests, reply, resolve them and view appointment/payment statuses. |
+| Themes | Light/dark mode follows the system initially and remembers an explicit browser preference. |
+
+## Required Setup
+
+- **Node.js 24 LTS recommended**, with npm. The package minimum is Node.js 22.19.0.
+- A modern browser, such as Edge, Chrome or Firefox.
+- A **Groq API key** for text classification and beta conversation. Obtain one from the [Groq Console](https://console.groq.com/keys).
+- Internet access for dependency installation, Groq calls and optional website retrieval.
+
+No Twilio account, WhatsApp number, Docker, PostgreSQL installation, SMTP account, map API key or payment account is needed for the local demo. Embedded PostgreSQL (PGlite) and its schema are initialized automatically on first start.
+
+Without a Groq key, the app still starts and the topic buttons, sample booking, payment simulation and operator workflows remain available. AI text requests show a controlled fallback.
 
 ## Quick Start
 
-### Prerequisites
-- Node.js 16+ (download from https://nodejs.org/)
-- PostgreSQL 12+ (for production)
-- Twilio Account with WhatsApp Business API access
+Run these commands in a terminal opened in the app folder, alongside [package.json](package.json). The examples use PowerShell.
 
-### Installation
+### 1. Install Dependencies
 
-1. Clone/extract the project:
-```bash
-cd diagnobot-whatsapp
-```
-
-2. Install dependencies:
-```bash
+```powershell
+node --version
 npm install
 ```
 
-3. Create .env file:
-```bash
-cp .env.example .env
+There is no frontend build step.
+
+### 2. Configure The Environment
+
+Use [.env.example](.env.example) as the template. Keep an existing environment file and its key; do not overwrite it. For a new checkout only:
+
+```powershell
+if (-not (Test-Path .env)) { Copy-Item .env.example .env }
 ```
 
-4. Edit .env with your credentials:
-```
-TWILIO_ACCOUNT_SID=your_sid
-TWILIO_AUTH_TOKEN=your_token
-DB_HOST=localhost
-DB_USER=diagnobot_user
-DB_PASSWORD=your_password
+Set these values in your local `.env`. Enter your Groq key privately in the blank value:
+
+```dotenv
+NODE_ENV=development
+PORT=3000
+DATA_MODE=sample
+GROQ_API_KEY=
+GROQ_MODEL=openai/gpt-oss-20b
+BETA_ASSISTANT=true
+PAYMENT_MODE=demo
+WEB_SOURCES=["https://www.nhs.uk/tests-and-treatments/blood-tests/"]
 ```
 
-5. Start the server:
-```bash
+For this local setup, leave `DATABASE_URL`, `APP_ORIGIN`, `SMTP_URL`, `ENCRYPTION_KEY` and Stripe/LIS credentials empty. A local encryption key is generated automatically. Never commit credentials or put them in browser code.
+
+`GROQ_MODEL` can select another model available to your account. Availability changes; use `npm run check:groq` to check classification with the configured model. It makes a real API request without displaying the key. AI usage is subject to provider quotas and pricing.
+
+`WEB_SOURCES` accepts up to three operator-approved HTTPS HTML page URLs. Set it to `[]` to disable retrieval. The sample environment defaults to the NHS page above when the setting is absent.
+
+### 3. Start The App
+
+```powershell
 npm start
 ```
 
-Server runs on http://localhost:3000
+Keep that terminal open. Normally the URLs are:
 
-## File Explanations
+- Patient desk: **http://127.0.0.1:3000**
+- Operator dashboard: **http://127.0.0.1:3000/bot-metrics-dashboard.html**
 
-### bot-core.js
-The main application file containing:
-- Express server setup
-- OTP generation & validation (bcrypt hashing)
-- Session management (30-minute expiry)
-- WhatsApp message handler (/webhook/whatsapp)
-- Report status lookup (5-second LIS API timeout)
-- Centre information & pricing handlers
-- HIPAA-compliant audit logging (zero PHI stored)
-- Health check endpoint (/health)
-- Metrics endpoint (/metrics) - feeds the dashboard
+Use the URLs printed by the server: in local mode it can try the next port if the configured port is occupied. **Serve the HTML through the app; opening it directly from disk will not work.** Authentication, assets and data depend on the server.
 
-**No external dependencies needed for this file to run** (only Express, bcrypt, crypto which are in package.json)
+For development with server auto-reload, run `npm run dev` instead. Press `Ctrl+C` in the server terminal to stop it. Restart after changing environment configuration. `npm start` starts the server; it does not make the prototype production-ready.
 
-### bot-metrics-dashboard.html
-Interactive HTML dashboard showing:
-- Active sessions count
-- Pending authentication states
-- Pie charts: Request status distribution & intent distribution
-- Audit log (last 10 entries)
-- Performance metrics (latency, success rate)
-- Auto-refreshes every 5 seconds
+### Optional: Separate Preview Data
 
-**This is a static HTML file with no build process or node_modules required.** Just open in browser or embed in web app.
+Beta is a mode in the same app, not a separate installation. To use an isolated preview on port 3001, run from the app folder:
 
-### SDD Pipeline Documents (docs/ folder)
-Complete specification-driven development pipeline:
-
-1. **Stage1_PRD.md** - What to build (product vision, user personas, success metrics)
-2. **Stage2_Spec.md** - How to build it (architecture, APIs, tech stack)
-3. **Stage3_Story.md** - User stories with acceptance scenarios
-4. **Stage4_AcceptCriteria.md** - Testable acceptance criteria
-5. **Stage5_Prompt.md** - System prompt for bot's intent recognition
-6. **Stage6_Code.md** - Implementation roadmap, schema, deployment
-
-## Running the Bot
-
-### Development Mode (with auto-reload)
-```bash
+```powershell
+$env:PORT = '3001'
+$env:DATA_DIR = Join-Path $PWD '.data/beta-preview'
 npm run dev
 ```
 
-### Production Mode
-```bash
+This creates or reuses a separate database, so it has different accounts, bookings and metrics. Only one process may open each embedded data directory. Use the matching port in the browser.
+
+After stopping the preview, remove those terminal overrides to return to the settings in your environment file:
+
+```powershell
+Remove-Item Env:PORT, Env:DATA_DIR -ErrorAction SilentlyContinue
 npm start
 ```
 
-### Run Tests
-```bash
-npm test
+## How To Use It
+
+### Patient Walkthrough
+
+1. Open the patient URL and select **Demo patient**. No password is required for the built-in sample account. Alternatively, create an account using fictional details and sign in; sample mode skips email verification.
+2. In **Guided**, select **Check reports**, **Find a centre** or **View prices** to see the sample data. Free-text requests use intent routing, not full conversational replies.
+3. Switch to **Assistant** beside the Beta badge. Try: `Help me plan a sample lab visit in Chennai.` Then ask a follow-up. The assistant receives the last ten stored beta conversation entries, not permanent chat history.
+4. Check **Approved websites** before sending a message to include configured page excerpts. Try: `According to the approved source, what are blood tests used for?` Retrieved sources appear as links. Retrieval failures are shown rather than treated as live information.
+5. Select a city, or click the location icon and allow browser access. Location permission is optional; declining still allows manual selection. Coordinates remain in browser memory, and only the selected city is supplied with beta chat.
+6. Open **Book appointment**. Choose city, centre, test, date and time, review the price, and confirm. This creates a **pending** sample reservation. Appointment times use India Standard Time; prices use INR.
+7. In **My appointments**, select **Sample payment**, then **Simulate payment**. The booking becomes **confirmed**, with payment status **simulated**. No card or gateway account is needed and no money moves.
+8. Use **Change location / time** to move the sample appointment, or **Cancel** to cancel it. The selected test and price remain unchanged during rescheduling.
+9. Use **Request support**, then **Connect to support** to consent to sharing recent conversation context with an operator. Replies appear in the support panel.
+
+The sun/moon button in the header switches themes. Sessions expire after 30 minutes without renewal; the app warns before expiry. Browser location requires HTTPS or a trusted localhost origin.
+
+### Operator Walkthrough
+
+1. Open the patient URL and select **Demo operator** to reach the dashboard.
+2. Review request counts, active sessions, errors, response times, topics, appointment/payment statuses and recent audit events.
+3. Claim a waiting support request before reading its conversation or replying. Send a reply, then resolve it when complete.
+
+For a simultaneous patient/operator demonstration, use different browsers or a normal and private browser window. Ordinary tabs share login cookies. Opening the same demo role twice also replaces that role's previous session.
+
+Both sides must use the same server URL and database to share tickets and activity. No external support team is automatically connected; the presenter operates the dashboard. Polling updates the dashboard but does not extend the session indefinitely.
+
+## Prototype Flowchart
+
+Adapted from the report, centre, pricing and support flows in [the original implementation framework](docs/WhatsApp_Bot_Implementation_Framework.md#appendix-b-bot-conversation-flow-examples). The historical WhatsApp/OTP entry is replaced by web sign-in, and the diagram includes the implemented beta and sample booking flow.
+
+```mermaid
+flowchart TD
+    Browser[Open web app] --> SignIn[Sample account or registered sign-in]
+    SignIn --> Role{Patient or operator?}
+    Role -->|Patient| Patient[Patient desk]
+    Role -->|Operator| Dashboard[Operator dashboard]
+    Patient --> Guided[Guided topics or intent routing]
+    Guided --> Data[Sample reports, centres and prices]
+    Patient --> Beta[Assistant Beta with session history]
+    Beta --> Web{Approved websites selected?}
+    Web -->|Yes| Retrieve[Retrieve allowed public pages]
+    Web -->|No| Context[Public catalogue context]
+    Retrieve --> Groq[Groq conversational reply]
+    Context --> Groq
+    Groq --> Reply[Display reply, sources and suggested controls]
+    Patient --> Location[Choose city or allow browser location]
+    Location --> Booking[Choose centre, test and slot]
+    Data --> Booking
+    Reply -->|User opens booking form| Booking
+    Booking --> Confirm{User confirms details?}
+    Confirm -->|Yes| Pending[Save pending sample reservation]
+    Confirm -->|No| Patient
+    Pending --> Simulate[User confirms simulated payment]
+    Simulate --> Confirmed[Confirmed sample appointment]
+    Confirmed --> Manage[View, change location or time, or cancel]
+    Patient --> Support[Request support and consent to sharing]
+    Support --> Queue[Waiting support ticket]
+    Dashboard --> Queue
+    Queue --> Operator[Operator claims, replies and resolves]
+    Operator --> Patient
+    Pending --> Database[(Embedded PGlite database)]
+    Confirmed --> Database
+    Manage --> Database
+    Queue --> Database
+    Database --> Dashboard
 ```
 
-## API Endpoints
+The model does not create reservations, charge cards or access patient report records itself. The user must use authenticated app controls to perform those actions. This diagram shows the default sample workflow, not a deployed clinical service.
 
-### POST /webhook/whatsapp
-WhatsApp inbound message handler.
+## Data Storage And Inspection
 
-Example request body:
-```json
-{
-  "from": "+919999999999",
-  "text": "What is my report status?",
-  "messageId": "wamid.abc123"
-}
+By default, storage is local to the machine running the server:
+
+| Run configuration | Database directory, relative to this folder |
+| --- | --- |
+| Normal start | `.data/postgres` |
+| Separate preview above | `.data/beta-preview/postgres` |
+| Custom `DATA_DIR` | The `postgres` subdirectory of that data directory |
+
+These contain PostgreSQL internal files, not JSON documents or editable spreadsheets. PGlite does not expose a normal database port for pgAdmin or a VS Code PostgreSQL connection. Do not edit those files or delete the accompanying `local.key`; encrypted records depend on that key. Keep local data and keys private.
+
+The dashboard displays operational data while the app runs. For a read-only table inspection, **stop the server using that database first**, then run from the app folder:
+
+```powershell
+# Normal database: counts and newest bookings.
+npm run db:inspect
+npm run db:inspect -- bookings
+
+# Separate preview database.
+npm run db:inspect -- --preview
+npm run db:inspect -- --preview bookings
+npm run db:inspect -- --preview audit_logs
 ```
 
-### GET /health
-Health check for load balancers. Returns 200 if operational.
+Available tables are `users`, `sessions`, `bookings`, `audit_logs`, `tickets` and `ticket_messages`. A selected table returns at most 25 recent rows, excluding credential fields, encrypted profiles and message contents. Amounts are minor currency units: `20000` paise means INR 200. The inspector cannot edit data. Default inspection honors `DATA_DIR` and `DATABASE_URL`; `--preview` explicitly targets the local preview.
 
-### GET /metrics
-Real-time statistics in JSON format:
-```json
-{
-  "activeSessions": 8,
-  "pendingAuthCount": 3,
-  "auditLogsCount": 247,
-  "successCount": 312,
-  "errorCount": 8,
-  "timeoutCount": 5,
-  "avgResponseTime": 1240,
-  "intents": {
-    "auth_success": 78,
-    "report_status": 156,
-    "centre_info": 52,
-    "pricing_inquiry": 18,
-    "escalation": 8
-  }
-}
-```
+Restart the app after inspection. Selecting a new data directory creates a separate dataset; it does not migrate existing records.
 
-## Architecture Overview
+## Optional Integrations
 
-```
-WhatsApp User
-    |
-    v
-Twilio Cloud API
-    |
-    v
-Node.js Express Server (bot-core.js)
-    |
-    +-> OTP Authentication (bcrypt)
-    +-> Session Management (Map-based, PostgreSQL in prod)
-    +-> LIS API Integration (5s timeout)
-    +-> Centre Info Lookup
-    +-> Audit Logging (SHA-256 phone hashing)
-    |
-    v
-Response -> Twilio -> WhatsApp User
-```
+None of these are required for the showcase:
 
-## Security & HIPAA Compliance
+| Integration | Additional setup and limitations |
+| --- | --- |
+| Stripe test Checkout | Set `PAYMENT_MODE=stripe`, a Stripe test secret, webhook signing secret and matching `APP_ORIGIN`. Sample data accepts test keys only. Confirmation is verified server-side; a return URL alone is not proof of payment. |
+| External PostgreSQL | Provision a server and set `DATABASE_URL`. Existing PGlite data is not migrated automatically. |
+| Live lab reports/catalogue | Requires a real LIS API, trusted account-to-patient linkage and an approved catalogue. No live lab is configured by default. |
+| Email verification/recovery | Live mode requires SMTP, origin and encryption configuration. Sample mode does not send recovery or verification emails. |
 
-- **OTP Hashing**: bcrypt with salt rounds=10 (never stored plaintext)
-- **Session Tokens**: 32-byte crypto-random generation
-- **Audit Logging**: SHA-256 phone hashing (zero PHI in logs)
-- **Encryption**: AES-256 for sensitive data in production
-- **TLS 1.2+**: All API communications
-- **Rate Limiting**: 3-attempt limits on OTP/DOB validation
-- **Session Expiry**: 30-minute timeout with 25-minute warning
+See [the beta operating guide](docs/BETA_ASSISTANT.md) for exact integration settings, webhook commands and limitations. Gateway behavior has automated tests with synthetic responses/events; testing an actual Stripe account requires your credentials. Do not enable live payments or use real patient data merely to demonstrate the prototype.
 
-## Database Schema (PostgreSQL)
+## Commands
 
-### sessions table
-```sql
-CREATE TABLE sessions (
-  id SERIAL PRIMARY KEY,
-  session_token VARCHAR(255) UNIQUE NOT NULL,
-  phone_hash VARCHAR(64) NOT NULL,
-  patient_id VARCHAR(20),
-  authenticated BOOLEAN DEFAULT FALSE,
-  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  expires_at TIMESTAMP NOT NULL,
-  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
-```
+| Command | Purpose |
+| --- | --- |
+| `npm start` | Start the web server. |
+| `npm run dev` | Start with server file watching. |
+| `npm run check:groq` | Make a small live classification request using the configured key/model. |
+| `npm test` | Run Node.js tests for auth, storage, routing, beta, booking/payment and theme behavior. |
+| `npm run lint` | Run ESLint on server and browser code. |
+| `npm run db:inspect -- bookings` | Inspect selected database fields read-only after stopping the embedded server. |
 
-### audit_logs table
-```sql
-CREATE TABLE audit_logs (
-  id SERIAL PRIMARY KEY,
-  phone_hash VARCHAR(64) NOT NULL,
-  action VARCHAR(50) NOT NULL,
-  intent VARCHAR(50),
-  response_time_ms INTEGER,
-  success BOOLEAN,
-  error_message TEXT,
-  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
-
--- Retention: 90 days (HIPAA requirement)
--- Index on phone_hash and created_at for queries
-```
-
-## Environment Setup (Development)
-
-### Using Docker (Optional)
-```bash
-docker-compose up
-```
-
-Creates PostgreSQL container automatically.
-
-### Manual PostgreSQL Setup
-```bash
-# Create database
-createdb diagnobot_prod
-
-# Create user
-createuser diagnobot_user --password
-
-# Run migrations (TBD in src/db/migrations/)
-psql diagnobot_prod < src/db/schema.sql
-```
-
-## Monitoring & Logging
-
-Application logs are written to:
-- **Console**: Real-time output during development
-- **File**: logs/app.log (production)
-
-Log levels: debug, info, warn, error
-
-Example:
-```
-2026-09-10T14:32:45Z [INFO] Session created: phoneHash=a7f2..., sessionToken=abc123...
-2026-09-10T14:31:22Z [INFO] Report status query: patientID=REG-12345, responseTime=1890ms
-2026-09-10T14:30:15Z [ERROR] LIS API timeout: patientID=REG-54321, duration=5000ms
-```
-
-## Performance Targets (Non-Functional Requirements)
-
-- Uptime: 99.5% (peak season)
-- Response time: <2 seconds (P95)
-- Concurrent sessions: 100+
-- Audit log retention: 90 days (HIPAA)
-- Message throughput: 900 calls/day during flu season
-
-## Deployment Checklist
-
-- [ ] Configure Twilio webhook URL
-- [ ] Set up PostgreSQL database with migrations
-- [ ] Generate strong encryption keys & secrets
-- [ ] Enable HTTPS/TLS for all endpoints
-- [ ] Configure firewall for port 3000
-- [ ] Set up monitoring & alerting
-- [ ] Enable audit log archival (S3/Cloud Storage)
-- [ ] Configure backup strategy
-- [ ] Test OTP flow end-to-end
-- [ ] Load test with 100+ concurrent sessions
-- [ ] HIPAA compliance audit
+Sample admin access is built in. For a separately registered, verified account, `npm run admin -- email@example.com` grants operator access. Stop the local server before running management commands that open its embedded database; sign in again afterward.
 
 ## Troubleshooting
 
-### Port 3000 already in use
-```bash
-lsof -i :3000
-kill -9 <PID>
-```
+| Symptom | What to check |
+| --- | --- |
+| `Embedded database is already open` | Stop the process using that data directory with `Ctrl+C`. A different HTTP port alone does not allow sharing an embedded database. Do not delete the lock while its owner is running. |
+| The page will not open | Start the app and use the exact printed URL. A previously stopped preview on port 3001 must be restarted. |
+| Wrong or missing bookings | Check the port and `DATA_DIR`. Normal and isolated preview runs use different datasets. Terminal environment overrides take precedence over the environment file. |
+| AI replies are unavailable | Check the Groq key privately, model availability, network and quota, then run `npm run check:groq`. This checks classification; also try a beta message. Topic buttons remain available during provider failure. |
+| Node reports an unknown startup option | Use the required Node version. Start scripts enable system certificate authorities with `--use-system-ca`; do not disable TLS verification to work around certificate errors. |
+| Website retrieval is unavailable | Ensure `WEB_SOURCES` is valid JSON with approved HTTPS HTML URLs. Redirects, private addresses, disallowed robots rules, large pages and timeouts can prevent retrieval. Arbitrary URLs entered in chat are not scraped. |
+| Location is denied | Select a city manually. Geolocation needs permission and HTTPS or localhost. |
+| Dashboard requires operator access | Sign in as Demo operator, using the same server URL as the patient. Use separate browser sessions to demonstrate both roles. |
+| Reset/verification emails do not arrive | Email delivery is not enabled in sample mode. Use a demo account or another fictional sample account. |
 
-### Database connection fails
-- Check PostgreSQL is running: `psql -U diagnobot_user -d diagnobot_prod`
-- Verify .env credentials
-- Ensure database exists: `createdb diagnobot_prod`
+## Code And Documentation
 
-### OTP not being sent
-- Verify Twilio credentials in .env
-- Check Twilio webhook URL points to your server
-- Review logs for Twilio API errors
+| Location | Responsibility |
+| --- | --- |
+| [bot-core.js](bot-core.js) | Server startup, selected port, storage lifecycle and shutdown. |
+| [public/index.html](public/index.html) and [public](public) | Patient UI, beta/booking controls, themes and shared browser scripts. |
+| [bot-metrics-dashboard.html](bot-metrics-dashboard.html) | Operator page, served by the app and backed by authenticated APIs. |
+| [src/app.js](src/app.js) and [src/auth.js](src/auth.js) | HTTP setup, security middleware and account/session handling. |
+| [src/features.js](src/features.js), [src/classifier.js](src/classifier.js), [src/assistant.js](src/assistant.js) | Guided routing, beta conversation and support APIs. |
+| [src/web.js](src/web.js) and [src/bookings.js](src/bookings.js) | Approved-site extraction and reservation/payment state transitions. |
+| [src/database.js](src/database.js), [src/schema.sql](src/schema.sql), [src/manage.js](src/manage.js) | Storage, actual table definitions and management/inspection commands. |
+| [src/catalogue.json](src/catalogue.json) and [src/reports.js](src/reports.js) | Sample centre/pricing data and sample/live report handling. |
+| [tests](tests) | Automated regression tests using the Node.js test runner. |
+| [docs/BETA_ASSISTANT.md](docs/BETA_ASSISTANT.md) | Current detailed beta setup and operating guide. |
+| [docs](docs) | Original requirements, SDD stages and historical WhatsApp concept. These are retained for context, not current setup instructions. |
 
-### Dashboard shows no metrics
-- Ensure bot-core.js is running on port 3000
-- Check /metrics endpoint: `curl http://localhost:3000/metrics`
-- Verify browser console for CORS issues
+## Prototype Boundaries
 
-## Contributing
-
-1. Follow SDD pipeline for new features (PRD -> Spec -> Stories -> Criteria)
-2. Write tests in tests/ folder
-3. Run linter before commit: `npm run lint`
-4. Update docs/ as specifications change
-
-## License
-
-MIT - See LICENSE file
-
-## Support
-
-For issues or questions:
-- Email: vishnunarayanan.vinodkumar@ust.com
-- Review docs/ folder for detailed specifications
-- Check logs/ for debugging information
+- Not a diagnostic, treatment or emergency service. The assistant is instructed to avoid clinical advice and result interpretation, but model output can still be inaccurate.
+- No real LIS, clinic scheduling, staffing, appointment notification or support-team integration is enabled by default. Listed centres and availability are samples, not a search of all nearby clinics.
+- Known identifiers are redacted before model calls; this is not complete medical-data de-identification. Do not submit real patient information during a showcase.
+- Accounts and short-lived session/support content use application security controls, but this is not a security audit, compliance certification or production-readiness claim. Demo accounts intentionally bypass normal login and must not be exposed as real patient access.
+- Paid Stripe cancellations, automatic refunds, chargeback handling and external refund synchronization are not implemented. Paid cancellations go through support.
+- The documentation's historical deployment goals and compliance targets are not guarantees of this prototype.

@@ -1,0 +1,17 @@
+{
+  "centres": [
+    { "id": "mg-road", "city": "Bangalore", "latitude": 12.9756, "longitude": 77.6068, "name": "Bangalore - MG Road", "address": "123 MG Road, Bangalore 560001", "hours": "Mon-Sat 07:00-20:00; Sun 08:00-14:00", "parking": "Free underground parking, 50 spaces", "holidays": ["2026-10-02", "2026-10-25"], "phone": "", "maps_url": "https://www.google.com/maps/search/?api=1&query=MG+Road+Bangalore" },
+    { "id": "whitefield", "city": "Bangalore", "latitude": 12.9698, "longitude": 77.7500, "name": "Bangalore - Whitefield", "address": "Sample location: Whitefield, Bangalore", "hours": "Hours awaiting centre confirmation", "parking": "Awaiting confirmation", "holidays": [], "phone": "", "maps_url": "https://www.google.com/maps/search/?api=1&query=Whitefield+Bangalore" },
+    { "id": "indiranagar", "city": "Bangalore", "latitude": 12.9784, "longitude": 77.6408, "name": "Bangalore - Indiranagar", "address": "Sample location: Indiranagar, Bangalore", "hours": "Hours awaiting centre confirmation", "parking": "Awaiting confirmation", "holidays": [], "phone": "", "maps_url": "https://www.google.com/maps/search/?api=1&query=Indiranagar+Bangalore" },
+    { "id": "koramangala", "city": "Bangalore", "latitude": 12.9352, "longitude": 77.6245, "name": "Bangalore - Koramangala", "address": "Sample location: Koramangala, Bangalore", "hours": "Hours awaiting centre confirmation", "parking": "Awaiting confirmation", "holidays": [], "phone": "", "maps_url": "https://www.google.com/maps/search/?api=1&query=Koramangala+Bangalore" },
+    { "id": "omr", "city": "Chennai", "latitude": 12.9032, "longitude": 80.2279, "name": "Chennai - OMR Road", "address": "Sample location: OMR Road, Chennai", "hours": "Hours awaiting centre confirmation", "parking": "Awaiting confirmation", "holidays": [], "phone": "", "maps_url": "https://www.google.com/maps/search/?api=1&query=OMR+Road+Chennai" },
+    { "id": "hitech", "city": "Hyderabad", "latitude": 17.4483, "longitude": 78.3915, "name": "Hyderabad - Hitech City", "address": "Sample location: Hitech City, Hyderabad", "hours": "Hours awaiting centre confirmation", "parking": "Awaiting confirmation", "holidays": [], "phone": "", "maps_url": "https://www.google.com/maps/search/?api=1&query=Hitech+City+Hyderabad" }
+  ],
+  "pricing": [
+    { "id": "glucose", "name": "Glucose", "category": "Individual tests", "price": 200, "included": "1 test", "turnaround": "Confirm with the centre" },
+    { "id": "diabetes", "name": "Diabetes screening", "category": "Test panels", "price": 800, "included": "Fasting glucose and HbA1c", "turnaround": "Confirm with the centre" },
+    { "id": "basic", "name": "Basic health check", "category": "Health packages", "price": 1500, "included": "10 tests", "turnaround": "24 hours" },
+    { "id": "standard", "name": "Standard blood panel", "category": "Health packages", "price": 2500, "included": "25 tests", "turnaround": "24-48 hours" },
+    { "id": "comprehensive", "name": "Comprehensive health check", "category": "Health packages", "price": 4500, "included": "50 tests and imaging", "turnaround": "48 hours", "promotion": { "text": "20% senior discount (sample)", "ends": "2026-09-30" } }
+  ]
+}

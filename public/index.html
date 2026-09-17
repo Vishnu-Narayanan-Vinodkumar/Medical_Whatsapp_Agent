@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#17685d">
+  <title>DiagnoBot | Patient Desk</title>
+  <script src="/assets/theme.js"></script>
+  <link rel="stylesheet" href="/assets/styles.css">
+  <script src="/assets/lucide.js" defer></script>
+  <script src="/assets/common.js" defer></script>
+  <script src="/assets/beta.js" defer></script>
+  <script src="/assets/chat.js" defer></script>
+</head>
+<body>
+  <header class="site-header">
+    <a class="brand" href="/"><span class="brand-mark"><i data-lucide="activity"></i></span><span>DiagnoBot<span class="brand-subtitle">Patient Desk</span></span></a>
+    <nav class="header-actions" aria-label="Account">
+      <span id="account-name" class="account-name"></span>
+      <a id="admin-link" class="icon-button" href="/bot-metrics-dashboard.html" title="Operator dashboard" aria-label="Operator dashboard" hidden><i data-lucide="chart-no-axes-combined"></i></a>
+      <button id="logout" class="icon-button" title="Sign out" aria-label="Sign out" hidden><i data-lucide="log-out"></i></button>
+    </nav>
+  </header>
+  <div id="sample-banner" class="notice sample-notice" hidden><i data-lucide="flask-conical"></i><span>Local sample environment. Use fictional details only.</span></div>
+  <div id="flash" class="notice error-notice" role="alert" hidden></div>
+  <main id="auth-screen" class="auth-screen">
+    <div class="section-label">YOUR ACCOUNT</div>
+    <h1 id="auth-title">Sign in</h1>
+    <div class="segmented" role="group" aria-label="Account action">
+      <button id="login-tab" aria-pressed="true">Sign in</button>
+      <button id="register-tab" aria-pressed="false">Create account</button>
+    </div>
+    <form id="auth-form">
+      <label id="name-field" hidden>Full name<input id="full-name" name="full_name" autocomplete="name" minlength="2" maxlength="50"></label>
+      <label>Email address<input id="email" name="email" type="email" autocomplete="email" maxlength="254" required></label>
+      <label>Password<input id="password" name="password" type="password" autocomplete="current-password" maxlength="72" required></label>
+      <label id="consent-field" class="checkbox-label" hidden><input id="consent" type="checkbox">I consent to storage of my account details.</label>
+      <p id="password-hint" class="muted" hidden>12+ characters, uppercase, lowercase, number and symbol.</p>
+      <button id="auth-submit" class="primary wide" type="submit"><span>Sign in</span><i data-lucide="arrow-right"></i></button>
+    </form>
+    <button id="recover-open" class="text-button">Forgot password or verification email?</button>
+    <div id="demo-access" class="demo-access" hidden>
+      <div class="section-label">SAMPLE ACCOUNTS</div>
+      <div class="button-row">
+        <button id="demo-patient" class="secondary"><i data-lucide="user-round"></i>Demo patient</button>
+        <button id="demo-admin" class="secondary"><i data-lucide="shield-check"></i>Demo operator</button>
+      </div>
+    </div>
+    <form id="reset-form" hidden>
+      <label>New password<input id="reset-password" type="password" minlength="12" maxlength="72" autocomplete="new-password" required></label>
+      <p class="muted">12+ characters, uppercase, lowercase, number and symbol.</p>
+      <button type="submit" class="primary">Change password</button>
+    </form>
+  </main>
+  <main id="chat-screen" class="workspace" hidden>
+    <aside class="sidebar">
+      <div class="section-label sidebar-heading">PATIENT SERVICES</div>
+      <nav id="topics" aria-label="Patient services">
+        <button data-action="report_status"><i data-lucide="file-check-2"></i><span>Check reports</span></button>
+        <button data-action="centre_info"><i data-lucide="map-pin"></i><span>Find a centre</span></button>
+        <button data-action="pricing"><i data-lucide="receipt-text"></i><span>View prices</span></button>
+        <button data-action="escalation"><i data-lucide="headset"></i><span>Request support</span></button>
+      </nav>
+      <nav class="booking-nav" aria-label="Appointments">
+        <button id="book-open"><i data-lucide="calendar-plus"></i><span>Book appointment</span></button>
+        <button id="appointments-open"><i data-lucide="calendar-check"></i><span>My appointments</span></button>
+      </nav>
+      <div class="sidebar-note"><i data-lucide="lock-keyhole"></i><span>Private session</span></div>
+      <a id="support-phone" class="phone-link" hidden></a>
+    </aside>
+    <section class="chat-main" aria-label="Conversation">
+      <div class="conversation-header"><div><div class="section-label">DIAGNOSTICS SUPPORT</div><h1>Your conversation</h1></div><span id="session-label" class="status-tag">Signed in</span></div>
+      <div class="beta-toolbar">
+        <div id="chat-modes" class="mode-picker">
+          <div class="mode-switch" role="group" aria-label="Chat mode">
+            <button id="guided-mode" aria-pressed="true">Guided</button>
+            <button id="beta-mode" aria-pressed="false" aria-describedby="assistant-beta-label">Assistant</button>
+          </div>
+          <span id="assistant-beta-label" class="beta-tag">Beta</span>
+        </div>
+        <label id="web-option" class="checkbox-label" hidden><input id="use-web" type="checkbox">Approved websites</label>
+      </div>
+      <div class="location-toolbar">
+        <label class="sr-only" for="location-city">Selected city</label>
+        <select id="location-city"><option value="">All cities</option></select>
+        <button id="detect-location" class="icon-button" title="Use my location (browser permission required)" aria-label="Use my location"><i data-lucide="locate-fixed"></i></button>
+        <span id="location-status" class="muted" role="status">Location not shared</span>
+      </div>
+      <div id="session-warning" class="notice" role="status" hidden><span>Your session expires in less than five minutes.</span><button id="keep-session" class="secondary">Stay signed in</button></div>
+      <div id="messages" class="messages" role="log" aria-live="polite" aria-relevant="additions"></div>
+      <section id="support-panel" class="support-panel" aria-label="Support conversation" hidden>
+        <div class="section-heading"><h2>Support request</h2><span id="ticket-status" class="status-tag"></span></div>
+        <p id="ticket-note" class="muted"></p>
+        <div id="support-messages" class="support-messages" aria-live="polite"></div>
+        <form id="support-form" class="composer"><label class="sr-only" for="support-input">Message support</label><input id="support-input" placeholder="Message the support team" maxlength="1000" required><button type="submit" class="icon-button primary" title="Send to support" aria-label="Send to support"><i data-lucide="send"></i></button></form>
+      </section>
+      <form id="chat-form" class="composer">
+        <label class="sr-only" for="message-input">Your message</label>
+        <textarea id="message-input" rows="2" placeholder="Ask about reports, centres or prices..." maxlength="1000" required></textarea>
+        <button id="send" class="icon-button primary" type="submit" title="Send message" aria-label="Send message"><i data-lucide="arrow-up"></i></button>
+      </form>
+      <div class="chat-footer"><span id="message-state" role="status">Ready</span><span>Not an emergency or medical advice service</span></div>
+    </section>
+  </main>
+  <dialog id="booking-dialog">
+    <div class="section-heading"><h2 id="booking-title">Book appointment</h2><button id="booking-close" class="icon-button" aria-label="Close booking" title="Close"><i data-lucide="x"></i></button></div>
+    <p id="booking-mode-note" class="muted"></p>
+    <form id="booking-form">
+      <div class="booking-grid">
+        <label>City<select id="booking-city" required></select></label>
+        <label>Centre<select id="booking-centre" required></select></label>
+      </div>
+      <label>Test or package<select id="booking-product" required></select></label>
+      <div class="booking-grid">
+        <label>Date<input id="booking-date" type="date" required></label>
+        <label>Time (India)<select id="booking-slot" required></select></label>
+      </div>
+      <div class="booking-total"><span>Total (INR)</span><strong id="booking-price"></strong></div>
+      <label class="checkbox-label"><input id="booking-consent" type="checkbox" required>I confirm the centre, test, date and price.</label>
+      <p id="booking-error" class="form-error" role="alert"></p>
+      <button id="booking-submit" class="primary wide" type="submit"><span>Reserve slot</span><i data-lucide="calendar-check"></i></button>
+    </form>
+  </dialog>
+  <dialog id="appointments-dialog">
+    <div class="section-heading"><h2>My appointments</h2><div class="button-row"><button id="appointments-refresh" class="icon-button" title="Refresh appointments" aria-label="Refresh appointments"><i data-lucide="refresh-cw"></i></button><button id="appointments-close" class="icon-button" title="Close" aria-label="Close appointments"><i data-lucide="x"></i></button></div></div>
+    <p id="appointments-note" class="muted" role="status"></p>
+    <div id="appointments-list" class="appointment-list"></div>
+  </dialog>
+  <dialog id="booking-confirm-dialog">
+    <div class="section-heading"><h2 id="booking-confirm-title">Confirm payment</h2><button id="booking-confirm-close" class="icon-button" title="Close" aria-label="Close confirmation"><i data-lucide="x"></i></button></div>
+    <p id="booking-confirm-details"></p>
+    <p id="booking-confirm-error" class="form-error" role="alert"></p>
+    <button id="booking-confirm-submit" class="primary wide"><span>Confirm</span><i data-lucide="arrow-right"></i></button>
+  </dialog>
+  <dialog id="recover-dialog">
+    <div class="section-heading"><h2>Account recovery</h2><button class="icon-button" id="recover-close" title="Close" aria-label="Close"><i data-lucide="x"></i></button></div>
+    <form id="recover-form">
+      <label>Email<input id="recover-email" type="email" autocomplete="email" required></label>
+      <label>Request<select id="recover-kind"><option value="reset">Password reset</option><option value="verify">Verification email</option></select></label>
+      <p id="recover-result" role="status"></p>
+      <button class="primary" type="submit">Send email</button>
+    </form>
+  </dialog>
+</body>
+</html>
