@@ -88,6 +88,25 @@ Use the URLs printed by the server: in local mode it can try the next port if th
 
 For development with server auto-reload, run `npm run dev` instead. Press `Ctrl+C` in the server terminal to stop it. Restart after changing environment configuration. `npm start` starts the server; it does not make the prototype production-ready.
 
+### Stopping The Server, Including One You Cannot Find
+
+Only one process may hold the embedded database, so a forgotten server blocks a new `npm start` with `Embedded database is already open`, and blocks `npm run db:inspect` and other management commands.
+
+- **Preferred:** press `Ctrl+C` in the terminal running the server and wait for the prompt to return. This releases the database cleanly.
+- **If that terminal is lost or closed**, find and stop the process from any PowerShell window:
+
+```powershell
+# Show what is listening on the app port (adjust 3000 if you changed PORT).
+Get-NetTCPConnection -LocalPort 3000 -State Listen | ForEach-Object { Get-Process -Id $_.OwningProcess }
+
+# Stop it once you confirm it is this app's node process.
+Get-NetTCPConnection -LocalPort 3000 -State Listen | ForEach-Object { Stop-Process -Id $_.OwningProcess }
+```
+
+On macOS or Linux, use `lsof -i :3000` to find the process, confirm it, then `kill <pid>`. Stop only this app's `node` process; do not stop unrelated processes. If a stopped preview used port 3001 or another `PORT`, check that port too.
+
+After a forced stop, the database lock is reclaimed automatically; the next `npm start` may pause for about twelve seconds before serving. Your data is preserved either way.
+
 ### Optional: Separate Preview Data
 
 Beta is a mode in the same app, not a separate installation. To use an isolated preview on port 3001, run from the app folder:
@@ -240,7 +259,7 @@ Sample admin access is built in. For a separately registered, verified account, 
 | Symptom | What to check |
 | --- | --- |
 | Startup pauses after a crash | Allow about twelve seconds for automatic stale-lock recovery. There is no need to find or delete a PID-based lock on this version. |
-| `Embedded database is already open` | Another server is still renewing the lock. Stop it with `Ctrl+C`, or use a separate `DATA_DIR`. A different HTTP port alone does not allow sharing an embedded database. Never manually remove an active lock. |
+| `Embedded database is already open` | Another server is still renewing the lock. Stop it with `Ctrl+C`, or find and stop it as shown in [Stopping The Server](#stopping-the-server-including-one-you-cannot-find), or use a separate `DATA_DIR`. A different HTTP port alone does not allow sharing an embedded database. Never manually remove an active lock. |
 | `Legacy database lock found` | One-time upgrade case: older versions wrote a PID-only file. Stop every older server using that data directory, then remove only its `database.lock` file and restart. Legacy files cannot safely be reclaimed by age because old servers did not renew them. Do not delete `postgres` or `local.key`. New checkouts do not need this step. |
 | Dependencies are missing on a new machine | Install supported Node.js with npm, then run `npm ci` from the app folder. Do not reuse another machine's `node_modules`. The default sample app needs no external database or credentials. |
 | The page will not open | Start the app and use the exact printed URL. A previously stopped preview on port 3001 must be restarted. |
