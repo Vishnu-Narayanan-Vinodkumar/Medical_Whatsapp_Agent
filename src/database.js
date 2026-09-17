@@ -1,20 +1,34 @@
 const fs = require('node:fs');
 const path = require('node:path');
+const lockfile = require('proper-lockfile');
 
 async function createDatabase({ databaseUrl = '', dataDir, readOnly = false } = {}) {
   let client;
-  let lockPath;
+  let releaseLock;
   if (!databaseUrl && dataDir) {
-    fs.mkdirSync(dataDir, { recursive: true });
-    lockPath = path.join(dataDir, 'database.lock');
-    if (fs.existsSync(lockPath)) {
-      const owner = Number(fs.readFileSync(lockPath, 'utf8'));
-      if (!Number.isInteger(owner) || owner <= 0) throw new Error('Invalid database lock. Check the local data directory.');
-      try { process.kill(owner, 0); }
-      catch (error) { if (error.code === 'ESRCH') fs.unlinkSync(lockPath); else throw error; }
+    try {
+      fs.mkdirSync(dataDir, { recursive: true });
+      dataDir = fs.realpathSync(dataDir);
+      const lockPath = path.join(dataDir, 'database.lock');
+      try {
+        if (!fs.lstatSync(lockPath).isDirectory()) {
+          throw Object.assign(new Error('Legacy database lock found. Stop any older server using DATA_DIR, then remove only its database.lock file and retry. Do not delete postgres or local.key.'), { code: 'DATABASE_LEGACY_LOCK' });
+        }
+      } catch (error) {
+        if (error.code !== 'ENOENT') throw error;
+      }
+      releaseLock = await lockfile.lock(dataDir, {
+        lockfilePath: lockPath,
+        stale: 10000,
+        update: 2000,
+        retries: { retries: 12, factor: 1, minTimeout: 1000, maxTimeout: 1000 },
+      });
+    } catch (error) {
+      if (error.code === 'ELOCKED') {
+        throw Object.assign(new Error('Embedded database is already open. Stop the other local server first.'), { code: 'DATABASE_LOCKED', cause: error });
+      }
+      throw error;
     }
-    try { fs.writeFileSync(lockPath, String(process.pid), { flag: 'wx', mode: 0o600 }); }
-    catch { throw new Error('Embedded database is already open. Stop the other local server first.'); }
   }
   try {
   if (databaseUrl) {
@@ -46,11 +60,12 @@ async function createDatabase({ databaseUrl = '', dataDir, readOnly = false } = 
     async close() {
       if (databaseUrl) await client.end();
       else await client.close();
-      if (lockPath) fs.unlinkSync(lockPath);
+      if (releaseLock) await releaseLock();
     },
   };
   } catch (error) {
-    if (lockPath) fs.unlinkSync(lockPath);
+    if (client) await (databaseUrl ? client.end() : client.close()).catch(() => {});
+    if (releaseLock) await releaseLock();
     throw error;
   }
 }

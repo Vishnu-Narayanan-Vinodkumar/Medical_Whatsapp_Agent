@@ -35,16 +35,18 @@ Without a Groq key, the app still starts and the topic buttons, sample booking, 
 
 Run these commands in a terminal opened in the app folder, alongside [package.json](package.json). The examples use PowerShell.
 
+For a fresh demo on Windows, macOS or Linux, use a supported Node.js version and a writable local folder. Copy or clone the source, including [package-lock.json](package-lock.json), but do not copy `node_modules`, `.data` or credentials from another machine. `npm ci` followed by `npm start` is enough to start the sample app; environment configuration is optional unless you need AI or external integrations. Each fresh installation creates its own database and encryption key.
+
 ### 1. Install Dependencies
 
 ```powershell
 node --version
-npm install
+npm ci
 ```
 
-There is no frontend build step.
+`npm ci` installs the pinned dependency versions for the current machine. There is no frontend build step. Keep the dependency lockfile with the source; reinstall dependencies after moving to another operating system.
 
-### 2. Configure The Environment
+### 2. Configure The Environment (Optional For The Sample App)
 
 Use [.env.example](.env.example) as the template. Keep an existing environment file and its key; do not overwrite it. For a new checkout only:
 
@@ -203,6 +205,10 @@ Available tables are `users`, `sessions`, `bookings`, `audit_logs`, `tickets` an
 
 Restart the app after inspection. Selecting a new data directory creates a separate dataset; it does not migrate existing records.
 
+The embedded database uses an automatically renewed directory lock, not a process ID. Clean shutdown releases it. After a forced stop or crash, a lock with no heartbeat for ten seconds is reclaimed automatically; startup retries for about twelve seconds to allow this recovery. A live server continues renewing its lock and a second writer is refused, even on another HTTP port. Keep embedded data on a writable local disk and do not synchronize an open database between machines.
+
+When intentionally moving existing sample data, stop the old server first and transfer the complete `postgres` directory together with its matching `local.key`, keeping them private. Omit the runtime `database.lock`; the destination creates a new lock. Do not mix keys from different installations or copy a running database.
+
 ## Optional Integrations
 
 None of these are required for the showcase:
@@ -233,7 +239,10 @@ Sample admin access is built in. For a separately registered, verified account, 
 
 | Symptom | What to check |
 | --- | --- |
-| `Embedded database is already open` | Stop the process using that data directory with `Ctrl+C`. A different HTTP port alone does not allow sharing an embedded database. Do not delete the lock while its owner is running. |
+| Startup pauses after a crash | Allow about twelve seconds for automatic stale-lock recovery. There is no need to find or delete a PID-based lock on this version. |
+| `Embedded database is already open` | Another server is still renewing the lock. Stop it with `Ctrl+C`, or use a separate `DATA_DIR`. A different HTTP port alone does not allow sharing an embedded database. Never manually remove an active lock. |
+| `Legacy database lock found` | One-time upgrade case: older versions wrote a PID-only file. Stop every older server using that data directory, then remove only its `database.lock` file and restart. Legacy files cannot safely be reclaimed by age because old servers did not renew them. Do not delete `postgres` or `local.key`. New checkouts do not need this step. |
+| Dependencies are missing on a new machine | Install supported Node.js with npm, then run `npm ci` from the app folder. Do not reuse another machine's `node_modules`. The default sample app needs no external database or credentials. |
 | The page will not open | Start the app and use the exact printed URL. A previously stopped preview on port 3001 must be restarted. |
 | Wrong or missing bookings | Check the port and `DATA_DIR`. Normal and isolated preview runs use different datasets. Terminal environment overrides take precedence over the environment file. |
 | AI replies are unavailable | Check the Groq key privately, model availability, network and quota, then run `npm run check:groq`. This checks classification; also try a beta message. Topic buttons remain available during provider failure. |

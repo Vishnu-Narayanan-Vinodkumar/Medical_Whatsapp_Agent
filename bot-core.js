@@ -41,6 +41,6 @@ async function start() {
   return { app, server, database };
 }
 
-if (require.main === module) start().catch(error => { console.error(error.message.startsWith('Production requires') || error.message.startsWith('Live mode requires') || error.message.startsWith('Unable to listen') ? error.message : 'Startup failed. Check configuration and database availability.'); process.exitCode = 1; });
+if (require.main === module) start().catch(error => { console.error(error.message.startsWith('Production requires') || error.message.startsWith('Live mode requires') || error.message.startsWith('Unable to listen') || ['DATABASE_LOCKED', 'DATABASE_LEGACY_LOCK'].includes(error.code) ? error.message : 'Startup failed. Check configuration and database availability.'); process.exitCode = 1; });
 
 module.exports = { start };
