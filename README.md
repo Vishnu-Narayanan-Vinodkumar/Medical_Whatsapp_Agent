@@ -5,7 +5,7 @@ A browser-based prototype with a patient chat, a beta conversational assistant, 
 **This implementation does not use Twilio or WhatsApp.** The folder name and older design documents reflect the original concept; users interact with this version through the web app.
 
 > Use fictional details only. Reports, clinic listings, prices, slots and default payments are samples. No real clinic appointment is created, no money moves in demo payment mode, and no regulatory compliance certification is claimed.
-
+![](docs/ca3d4e3d-1523-43c6-b3f1-59c49ce1f81f.png)
 ## What Works In The Prototype
 
 | Feature | What actually happens |
