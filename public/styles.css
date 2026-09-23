@@ -161,3 +161,65 @@ dialog::backdrop{background:var(--backdrop)}
 .message>button{margin-top:10px}
 @media(max-width:700px){.booking-nav{margin-top:4px;padding-top:4px}.beta-toolbar{gap:8px}.mode-picker{width:100%}.location-toolbar .muted{min-width:100%;font-size:10px}.chat-main{height:auto;min-height:650px}.messages{height:320px;flex:none}.booking-grid{grid-template-columns:1fr;gap:0}.booking-grid label{margin:8px 0}.appointment-row .status-tag{white-space:normal}.appointment-actions button{flex:1}.booking-grid input{min-height:44px}}
 @media(max-width:360px){.site-header{padding-inline:12px;gap:6px;flex-wrap:wrap}.header-actions{margin-left:auto}.brand{font-size:17px;gap:6px;flex-shrink:1}.brand-mark{width:30px;height:30px;flex-shrink:0}.brand-subtitle{font-size:9px}.mode-picker{gap:6px}.mode-switch button{padding:8px 5px;font-size:11px}.sidebar nav button{gap:6px;padding-inline:2px}.conversation-header{flex-wrap:wrap}.chat-footer{overflow-wrap:anywhere}}
+
+.demo-cta{border-color:var(--teal);color:var(--teal);white-space:nowrap;flex-shrink:0}
+.demo-overlay{position:fixed;inset:0;background:var(--backdrop);display:grid;place-items:center;z-index:100;padding:20px}
+.demo-shell{width:min(100%,1100px);max-height:92dvh;background:var(--paper);border:1px solid var(--line);border-radius:10px;box-shadow:0 20px 80px var(--dialog-shadow);display:flex;flex-direction:column;overflow:hidden}
+.demo-topbar{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 20px;border-bottom:1px solid var(--line);background:var(--sidebar)}
+.demo-topbar-title{display:flex;align-items:center;gap:10px;font-weight:700}
+.demo-topbar-actions{display:flex;align-items:center;gap:8px}
+.demo-body{display:grid;grid-template-columns:340px minmax(0,1fr);gap:0;flex:1;min-height:0;overflow:auto}
+.demo-phone-pane{border-right:1px solid var(--line);padding:20px;display:flex;flex-direction:column;gap:14px;background:var(--canvas)}
+.demo-phone{background:var(--paper);border:1px solid var(--line);border-radius:14px;overflow:hidden;display:flex;flex-direction:column;height:260px}
+.demo-phone-header{display:flex;align-items:center;gap:10px;padding:12px 14px;border-bottom:1px solid var(--line);background:var(--teal);color:#fff}
+.demo-phone-header strong{display:block;font-size:13px}
+.demo-phone-header span{display:block;font-size:10px;opacity:.85}
+.demo-messages{flex:1;overflow-y:auto;padding:14px;display:flex;flex-direction:column;gap:10px;background:#e5ddd0}
+:root[data-theme=dark] .demo-messages{background:#0e1a15}
+.demo-bubble{max-width:82%}
+.demo-bubble-text{padding:8px 12px;border-radius:8px;font-size:12.5px;line-height:1.45;white-space:pre-wrap;overflow-wrap:anywhere;box-shadow:0 1px 1px #0000001a}
+.demo-bubble.patient{align-self:flex-end}
+.demo-bubble.patient .demo-bubble-text{background:#dcf8c6;color:#111}
+.demo-bubble.bot{align-self:flex-start}
+.demo-bubble.bot .demo-bubble-text{background:#fff;color:#111}
+.demo-samples-label{margin-top:2px}
+.demo-scenario-picker{display:flex;flex-direction:column;gap:6px}
+.demo-scenario-btn{width:100%;justify-content:flex-start;text-align:left;font-size:12px;font-weight:600}
+.demo-scenario-btn:disabled{cursor:default;opacity:.5}
+.demo-crew-status{display:flex;align-items:center;gap:8px;padding:8px 14px;border-top:1px solid var(--line);background:var(--teal-light);color:var(--positive);font-size:12px;font-weight:600}
+.demo-crew-status span{transition:opacity .15s ease-in-out}
+.demo-spin{width:15px;height:15px;flex-shrink:0;animation:demo-spin 1s linear infinite}
+@keyframes demo-spin{to{transform:rotate(360deg)}}
+.demo-typing-dots{display:flex;gap:4px;padding:12px 14px;background:#fff;border-radius:8px;box-shadow:0 1px 1px #0000001a}
+:root[data-theme=dark] .demo-typing-dots{background:#2a332d}
+.demo-typing-dots span{width:6px;height:6px;border-radius:50%;background:var(--muted);animation:demo-typing-bounce 1.1s ease-in-out infinite}
+.demo-typing-dots span:nth-child(2){animation-delay:.15s}
+.demo-typing-dots span:nth-child(3){animation-delay:.3s}
+@keyframes demo-typing-bounce{0%,60%,100%{transform:translateY(0);opacity:.5}30%{transform:translateY(-4px);opacity:1}}
+.demo-agent-pane{padding:20px;overflow:auto}
+.demo-pipeline{display:flex;align-items:center;flex-wrap:wrap;gap:4px;margin:14px 0 20px}
+.demo-agent-node{display:flex;flex-direction:column;align-items:center;gap:6px;width:96px;opacity:.45;transition:opacity .25s,transform .25s}
+.demo-agent-icon{width:44px;height:44px;border-radius:50%;display:grid;place-items:center;background:var(--inset);border:2px solid var(--line);color:var(--muted);transition:all .25s}
+.demo-agent-label{font-size:10px;font-weight:700;text-align:center;color:var(--muted)}
+.demo-agent-node.done{opacity:1}
+.demo-agent-node.done .demo-agent-icon{background:var(--teal-light);border-color:var(--teal);color:var(--teal)}
+.demo-agent-node.done .demo-agent-label{color:var(--teal)}
+.demo-agent-node.active{opacity:1;transform:translateY(-2px)}
+.demo-agent-node.active .demo-agent-icon{background:var(--teal);border-color:var(--teal);color:#fff;box-shadow:0 0 0 5px var(--teal-light);animation:demo-pulse 1s ease-in-out infinite}
+.demo-agent-node.active .demo-agent-label{color:var(--teal)}
+@keyframes demo-pulse{0%,100%{box-shadow:0 0 0 4px var(--teal-light)}50%{box-shadow:0 0 0 8px var(--teal-light)}}
+.demo-agent-arrow{color:var(--line);display:flex;align-items:center}
+.demo-agent-arrow svg{width:16px;height:16px}
+.demo-agent-detail{border-top:1px solid var(--line);padding-top:16px}
+.demo-step-list{display:flex;flex-direction:column;gap:0;margin-top:12px;min-height:40px}
+.demo-step-row{padding:16px 0;border-bottom:1px solid var(--line)}
+.demo-step-row.enter{animation:demo-step-enter .35s ease-out}
+.demo-step-row:last-child{border-bottom:0}
+@keyframes demo-step-enter{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+.demo-step-row-header{display:flex;align-items:center;gap:10px;margin-bottom:6px;flex-wrap:wrap}
+.demo-step-index{font-size:11px;font-weight:700;color:var(--muted);font-variant-numeric:tabular-nums}
+.demo-step-agent{font-size:11px;font-weight:700;color:var(--teal);background:var(--teal-light);border-radius:4px;padding:2px 8px}
+.demo-step-title-inline{font-size:14px;font-weight:700}
+.demo-payload{background:var(--inset);border-radius:6px;padding:12px;font-size:11.5px;overflow:auto;white-space:pre-wrap;overflow-wrap:anywhere;margin-top:8px}
+.demo-footnote{padding:10px 20px;border-top:1px solid var(--line);font-size:11px;color:var(--muted);background:var(--sidebar)}
+@media(max-width:800px){.demo-body{grid-template-columns:1fr}.demo-phone-pane{border-right:0;border-bottom:1px solid var(--line)}.demo-phone{height:280px}}

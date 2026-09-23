@@ -11,12 +11,14 @@
   <script src="/assets/common.js" defer></script>
   <script src="/assets/beta.js" defer></script>
   <script src="/assets/chat.js" defer></script>
+  <script src="/assets/demo.js" defer></script>
 </head>
 <body>
   <header class="site-header">
     <a class="brand" href="/"><span class="brand-mark"><i data-lucide="activity"></i></span><span>DiagnoBot<span class="brand-subtitle">Patient Desk</span></span></a>
     <nav class="header-actions" aria-label="Account">
       <span id="account-name" class="account-name"></span>
+      <button id="watch-demo" class="secondary demo-cta"><i data-lucide="play-circle"></i><span>Demo</span></button>
       <a id="admin-link" class="icon-button" href="/bot-metrics-dashboard.html" title="Operator dashboard" aria-label="Operator dashboard" hidden><i data-lucide="chart-no-axes-combined"></i></a>
       <button id="logout" class="icon-button" title="Sign out" aria-label="Sign out" hidden><i data-lucide="log-out"></i></button>
     </nav>
@@ -141,5 +143,35 @@
       <button class="primary" type="submit">Send email</button>
     </form>
   </dialog>
+  <div id="demo-overlay" class="demo-overlay" hidden role="dialog" aria-modal="true" aria-label="DiagnoBot architecture and request flow">
+    <div class="demo-shell">
+      <header class="demo-topbar">
+        <div class="demo-topbar-title"><i data-lucide="workflow"></i><span>DiagnoBot &mdash; Agent Architecture &amp; Request Flow</span></div>
+        <div class="demo-topbar-actions">
+          <button id="demo-close" class="icon-button" title="Close" aria-label="Close"><i data-lucide="x"></i></button>
+        </div>
+      </header>
+      <div class="demo-body">
+        <aside class="demo-phone-pane">
+          <div class="demo-phone">
+            <div class="demo-phone-header"><i data-lucide="message-circle"></i><div><strong>Patient conversation</strong><span>Click a sample message to run it</span></div></div>
+            <div id="demo-messages" class="demo-messages demo-messages-static"></div>
+            <div id="demo-crew-status" class="demo-crew-status" hidden><i data-lucide="loader-circle" class="demo-spin"></i><span id="demo-crew-status-text">Your CrewAI crew is running in the background&hellip;</span></div>
+          </div>
+          <div class="section-label demo-samples-label">SAMPLE MESSAGES</div>
+          <div class="demo-scenario-picker" id="demo-scenario-picker"></div>
+        </aside>
+        <section class="demo-agent-pane">
+          <div class="section-label">AGENT PIPELINE</div>
+          <div id="demo-pipeline" class="demo-pipeline demo-pipeline-static"></div>
+          <div class="demo-agent-detail">
+            <div class="section-label">STEP-BY-STEP BREAKDOWN</div>
+            <div id="demo-step-list" class="demo-step-list"></div>
+          </div>
+        </section>
+      </div>
+      <footer class="demo-footnote">Illustrative view of the agent crew (classification, response generation, action handling, safety guardrails). No live model or network calls are made from this view.</footer>
+    </div>
+  </div>
 </body>
 </html>
