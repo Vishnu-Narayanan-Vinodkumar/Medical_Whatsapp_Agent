@@ -90,9 +90,15 @@
       </div>
       <div id="session-warning" class="notice" role="status" hidden><span>Your session expires in less than five minutes.</span><button id="keep-session" class="secondary">Stay signed in</button></div>
       <div id="messages" class="messages" role="log" aria-live="polite" aria-relevant="additions"></div>
-      <section id="support-panel" class="support-panel" aria-label="Support conversation" hidden>
-        <div class="section-heading"><h2>Support request</h2><span id="ticket-status" class="status-tag"></span></div>
-        <p id="ticket-note" class="muted"></p>
+      <section id="support-panel" class="support-panel support-collapsed" aria-label="Support conversation" hidden>
+        <div class="support-panel-header">
+          <div class="section-heading"><h2>Support request</h2><span id="ticket-status" class="status-tag"></span></div>
+          <div class="support-panel-actions">
+            <button id="support-expand" class="icon-button" title="Expand support panel" aria-label="Expand support panel"><i data-lucide="maximize-2"></i></button>
+            <button id="support-close" class="icon-button" title="Close support panel" aria-label="Close support panel"><i data-lucide="x"></i></button>
+          </div>
+        </div>
+        <p id="ticket-note" class="muted support-note"></p>
         <div id="support-messages" class="support-messages" aria-live="polite"></div>
         <form id="support-form" class="composer"><label class="sr-only" for="support-input">Message support</label><input id="support-input" placeholder="Message the support team" maxlength="1000" required><button type="submit" class="icon-button primary" title="Send to support" aria-label="Send to support"><i data-lucide="send"></i></button></form>
       </section>

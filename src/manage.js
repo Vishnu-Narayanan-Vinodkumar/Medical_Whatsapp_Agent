@@ -6,7 +6,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 
 const INSPECTION_VIEWS = {
-  users: 'id,role,verified,created_at',
+  users: 'id,role,verified,verify_expires,reset_expires,created_at',
   sessions: 'user_id,created_at,expires_at',
   bookings: 'id,user_id,centre_name,product_name,starts_at,amount,currency,status,payment_mode,payment_status,created_at',
   audit_logs: 'id,user_id,action,intent,success,reason,response_ms,groq_ms,groq_called,created_at',
@@ -14,11 +14,30 @@ const INSPECTION_VIEWS = {
   ticket_messages: 'id,ticket_id,author,created_at',
 };
 
-async function inspectDatabase(database, table) {
+function loadInspectSecurity(dataDir) {
+  const envKey = process.env.ENCRYPTION_KEY;
+  if (/^[a-f0-9]{64}$/i.test(envKey || '')) return createSecurity(envKey);
+  const keyPath = path.join(dataDir, 'local.key');
+  if (fs.existsSync(keyPath)) {
+    const key = fs.readFileSync(keyPath, 'utf8').trim();
+    if (/^[a-f0-9]{64}$/i.test(key)) return createSecurity(key);
+  }
+  return null;
+}
+
+async function inspectDatabase(database, table, security) {
   if (table && !Object.hasOwn(INSPECTION_VIEWS, table)) throw new Error(`Inspect: choose one of ${Object.keys(INSPECTION_VIEWS).join(', ')}.`);
   const available = (await database.query("SELECT table_name FROM information_schema.tables WHERE table_schema='public' AND table_type='BASE TABLE' ORDER BY table_name")).rows.map(row => row.table_name).filter(name => Object.hasOwn(INSPECTION_VIEWS, name));
   if (table) {
     if (!available.includes(table)) throw new Error('Inspect: this table is not initialized. Start the updated app once, then stop it before inspecting.');
+    if (table === 'users' && security) {
+      const rows = (await database.query(`SELECT ${INSPECTION_VIEWS[table]},profile FROM users ORDER BY created_at DESC LIMIT 25`)).rows;
+      return rows.map(row => {
+        let name = null;
+        try { name = security.open(row.profile)?.full_name || null; } catch { name = null; }
+        return { id: row.id, name, role: row.role, verified: row.verified, verify_expires: row.verify_expires, reset_expires: row.reset_expires, created_at: row.created_at };
+      });
+    }
     return (await database.query(`SELECT ${INSPECTION_VIEWS[table]} FROM ${table} ORDER BY created_at DESC LIMIT 25`)).rows;
   }
   const result = [];
@@ -35,11 +54,12 @@ async function main() {
     const dataDir = preview ? path.join(__dirname, '..', '.data', 'beta-preview') : path.resolve(process.env.DATA_DIR || path.join(__dirname, '..', '.data'));
     if (email && !Object.hasOwn(INSPECTION_VIEWS, email)) throw new Error(`Inspect: choose one of ${Object.keys(INSPECTION_VIEWS).join(', ')}.`);
     if (!databaseUrl && !fs.existsSync(path.join(dataDir, 'postgres', 'PG_VERSION'))) throw new Error('Inspect: no embedded database exists at this location. Use --preview for the beta preview or check DATA_DIR.');
+    const security = loadInspectSecurity(dataDir);
     const database = await createDatabase({ databaseUrl, dataDir, readOnly: true });
     try {
       console.log(databaseUrl ? 'Read-only inspection: configured external PostgreSQL.' : `Read-only inspection: ${path.join(dataDir, 'postgres')}`);
-      console.table(await inspectDatabase(database, email));
-      console.log('Newest 25 rows per selected table. Amounts are in minor currency units (20000 INR paise = INR 200). Sensitive profile, password, token and message-content fields are excluded.');
+      console.table(await inspectDatabase(database, email, security));
+      console.log('Newest 25 rows per selected table. Amounts are in minor currency units (20000 INR paise = INR 200). Name is decrypted for the users table on local inspection only; password, email, token and message-content fields remain excluded (irreversibly hashed or out of scope for this tool).');
     } finally { await database.close(); }
     return;
   }
