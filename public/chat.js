@@ -32,6 +32,7 @@
     byId('messages').replaceChildren();
     byId('support-messages').replaceChildren();
     byId('support-panel').hidden = true;
+    byId('support-panel').classList.remove('support-closed');
     byId('support-input').value = '';
     window.dispatchEvent(new Event('patient-signed-out'));
   }
@@ -141,8 +142,9 @@
       const result = await api('/api/escalations');
       if (state.user?.id !== userId) return;
       ticket = result.ticket;
-      byId('support-panel').hidden = !ticket;
-      if (!ticket) return;
+      const isClosed = byId('support-panel').classList.contains('support-closed');
+      byId('support-panel').hidden = !ticket || isClosed;
+      if (!ticket || isClosed) return;
       byId('ticket-status').textContent = label(ticket.status);
       byId('ticket-status').className = `status-tag ${ticket.status}`;
       const minutes = Math.floor((Date.now() - new Date(ticket.created_at).getTime()) / 60000);
@@ -209,6 +211,42 @@
     try { await api(`/api/escalations/${ticket.id}/messages`, { message: byId('support-input').value }); byId('support-input').value = ''; await pollSupport(); }
     catch (error) { flash(error.message); }
     finally { button.disabled = false; }
+  });
+  byId('support-expand').addEventListener('click', () => {
+    const panel = byId('support-panel');
+    if (panel.classList.contains('support-expanded')) {
+      panel.classList.remove('support-expanded');
+      panel.classList.add('support-collapsed');
+      byId('support-expand').title = 'Expand support panel';
+      byId('support-expand').setAttribute('aria-label', 'Expand support panel');
+      byId('support-expand').querySelector('i').dataset.lucide = 'maximize-2';
+    } else {
+      panel.classList.remove('support-collapsed');
+      panel.classList.add('support-expanded');
+      byId('support-expand').title = 'Collapse support panel';
+      byId('support-expand').setAttribute('aria-label', 'Collapse support panel');
+      byId('support-expand').querySelector('i').dataset.lucide = 'minimize-2';
+    }
+    icons();
+  });
+  byId('support-close').addEventListener('click', async () => {
+    if (!ticket) return;
+    const closeBtn = byId('support-close');
+    closeBtn.disabled = true;
+    try {
+      await api(`/api/escalations/${ticket.id}/close`, {});
+      ticket = null;
+      byId('support-panel').hidden = true;
+      byId('support-panel').classList.add('support-closed');
+      flash('Support request closed.', true);
+      setTimeout(() => {
+        byId('flash').hidden = true;
+      }, 5000);
+      closeBtn.disabled = false;
+    } catch (error) {
+      flash(error.message);
+      closeBtn.disabled = false;
+    }
   });
   byId('recover-open').addEventListener('click', () => byId('recover-dialog').showModal());
   byId('recover-close').addEventListener('click', () => byId('recover-dialog').close());

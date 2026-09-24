@@ -21,6 +21,7 @@ A browser-based prototype with a patient chat, a beta conversational assistant, 
 | Appointments | Reservations, location/time changes and statuses are saved in the local database. Clinic inventory is simulated. |
 | Payments | Default payment is an explicit simulation. Hosted Stripe Checkout is an optional integration requiring separate credentials. |
 | Operator desk | Metrics reflect actual activity in this app. Operators can claim support requests, reply, resolve them and view appointment/payment statuses. |
+| Support panel | Patients can collapse an active support request to a compact banner, expand it to read the full conversation and reply, or close it. Closing resolves the ticket on the server, not only in the browser; a resolved or hidden request will not reappear on its own. |
 | Themes | Light/dark mode follows the system initially and remembers an explicit browser preference. |
 
 ## Required Setup
@@ -141,9 +142,11 @@ npm start
 6. Open **Book appointment**. Choose city, centre, test, date and time, review the price, and confirm. This creates a **pending** sample reservation. Appointment times use India Standard Time; prices use INR.
 7. In **My appointments**, select **Sample payment**, then **Simulate payment**. The booking becomes **confirmed**, with payment status **simulated**. No card or gateway account is needed and no money moves.
 8. Use **Change location / time** to move the sample appointment, or **Cancel** to cancel it. The selected test and price remain unchanged during rescheduling.
-9. Use **Request support**, then **Connect to support** to consent to sharing recent conversation context with an operator. Replies appear in the support panel.
+9. Use **Request support**, then **Connect to support** to consent to sharing recent conversation context with an operator. Replies appear in the support panel, which opens as a compact banner. Use the expand control to read the conversation and reply, the collapse control to shrink it back to a banner, or the close control to end the request. Closing calls the server to resolve the ticket; it does not just hide the panel, and the panel stays hidden afterward rather than reappearing on the next status check.
 
 The sun/moon button in the header switches themes. Sessions expire after 30 minutes without renewal; the app warns before expiry. Browser location requires HTTPS or a trusted localhost origin.
+
+The sidebar navigation stays fixed in place while the conversation scrolls, and the message list is a fixed-height scrollable panel rather than one that grows the page — a long conversation stays contained and scrolls internally instead of pushing the composer and footer off-screen.
 
 ### Operator Walkthrough
 
@@ -223,7 +226,9 @@ npm run db:inspect -- --preview bookings
 npm run db:inspect -- --preview audit_logs
 ```
 
-Available tables are `users`, `sessions`, `bookings`, `audit_logs`, `tickets` and `ticket_messages`. A selected table returns at most 25 recent rows, excluding credential fields, encrypted profiles and message contents. Amounts are minor currency units: `20000` paise means INR 200. The inspector cannot edit data. Default inspection honors `DATA_DIR` and `DATABASE_URL`; `--preview` explicitly targets the local preview.
+Available tables are `users`, `sessions`, `bookings`, `audit_logs`, `tickets` and `ticket_messages`. A selected table returns at most 25 recent rows. Amounts are minor currency units: `20000` paise means INR 200. The inspector cannot edit data. Default inspection honors `DATA_DIR` and `DATABASE_URL`; `--preview` explicitly targets the local preview.
+
+For `users`, the inspector decrypts and shows `name` from the encrypted profile, using the local `local.key` (or `ENCRYPTION_KEY`) for the data directory being inspected; `name` is `null` if no matching key is found or decryption fails. Email and password remain excluded and cannot be recovered by this or any command: `email_hash` and `password_hash` are one-way hashes (HMAC-SHA256 and bcrypt), and the original values were never stored anywhere. Message contents and other encrypted context fields also remain excluded.
 
 Restart the app after inspection. Selecting a new data directory creates a separate dataset; it does not migrate existing records.
 

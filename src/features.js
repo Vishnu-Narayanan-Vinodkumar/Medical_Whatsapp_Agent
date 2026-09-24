@@ -130,6 +130,13 @@ function createFeatures({ classifier, fetchImpl, assistant, webReader, paymentCl
       await auth.audit(req.user.id, 'support_message');
       res.json({ message: 'Message sent to support.', expires_at: await auth.refresh(req, res) });
     });
+    app.post('/api/escalations/:id/close', auth.authenticate, busy, async (req, res) => {
+      if (!validId(req.params.id)) return res.status(400).json({ error: 'Invalid request ID.' });
+      const result = await database.query("UPDATE tickets SET status='resolved',updated_at=NOW() WHERE id=$1 AND user_id=$2 AND status<>'resolved' RETURNING id", [req.params.id, req.user.id]);
+      if (!result.rows.length) return res.status(404).json({ error: 'Open support request not found.' });
+      await auth.audit(req.user.id, 'support_closed');
+      res.json({ message: 'Support request closed.', expires_at: await auth.refresh(req, res) });
+    });
 
     app.use('/admin', auth.authenticate, auth.adminOnly);
     app.get(['/admin/metrics', '/metrics'], auth.authenticate, auth.adminOnly, async (req, res) => {
